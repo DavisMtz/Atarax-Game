@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account status and stats in Atarax RPG",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Authentic Firebase Auth UID" },
+        "username": { "type": "string", "description": "Atarax RPG player username" },
+        "email": { "type": "string", "description": "Player email" },
+        "status": { "type": "string", "enum": ["active", "inactive"], "description": "Current status of the player" },
+        "lastActive": { "type": "integer", "description": "Unix timestamp in ms" },
+        "characterClass": { "type": "string", "description": "RPG class" },
+        "characterHeight": { "type": "number", "description": "Character height from 1.5m to 5.0m max" },
+        "avatarUrl": { "type": "string", "description": "Avatar representation" },
+        "hp": { "type": "integer", "description": "Hit points" },
+        "gold": { "type": "integer", "description": "In-game virtual gold currency" },
+        "characterBio": { "type": "string", "description": "Backstory extracted" }
+      },
+      "required": ["userId", "username", "email", "status", "hp", "gold"]
+    },
+    "House": {
+      "title": "Atarax House",
+      "description": "Atarax virtual house measuring 100x100 space and current furniture layouts",
+      "type": "object",
+      "properties": {
+        "houseId": { "type": "string", "description": "House unique identifier (typically ownerId)" },
+        "ownerId": { "type": "string", "description": "Owner user UID" },
+        "ownerName": { "type": "string", "description": "Username of the owner" },
+        "isPublic": { "type": "boolean", "description": "Whether the house is browseable on the public maps" },
+        "accessCode": { "type": "string", "description": "Secret access code to find the house if hidden" },
+        "furniture": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "x": { "type": "integer" },
+              "y": { "type": "integer" },
+              "rotation": { "type": "integer" },
+              "itemType": { "type": "string" },
+              "emoji": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          }
+        },
+        "style": { "type": "string", "description": "Wooden, Cyber, Medieval, Gothic, Modernism" }
+      },
+      "required": ["houseId", "ownerId", "ownerName", "isPublic", "furniture"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User personal game sheet and online statuses"
+    },
+    "/houses/{houseId}": {
+      "schema": "House",
+      "description": "Housing data grids including coordinates and items"
+    }
+  }
+}

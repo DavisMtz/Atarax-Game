@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (default deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // User profile validations
+    function isValidUser(data) {
+      return data.userId == request.auth.uid
+        && data.username is string
+        && data.username.size() >= 3
+        && data.username.size() <= 30
+        && data.email is string
+        && (data.status == "active" || data.status == "inactive")
+        && data.hp is int
+        && data.hp >= 0
+        && data.gold is int
+        && data.gold >= 0;
+    }
+
+    // House configuration validations
+    function isValidHouse(data) {
+      return data.houseId is string
+        && data.ownerId == request.auth.uid
+        && data.ownerName is string
+        && data.isPublic is bool
+        && data.furniture is list;
+    }
+
+    // Match rules for Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data)
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if false; // Profiles cannot be deleted from player client
+    }
+
+    // Match rules for Houses collection
+    match /houses/{houseId} {
+      // Anyone signed in can read a public house, or their own. Private requires access code handled filter-side or matching code as a lookup.
+      allow read: if isSignedIn() && (
+        resource.data.isPublic == true || 
+        resource.data.ownerId == request.auth.uid
+      );
+      allow create: if isSignedIn() && isValidId(houseId) && isValidHouse(request.resource.data);
+      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid
+        && isValidHouse(request.resource.data)
+        && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}
